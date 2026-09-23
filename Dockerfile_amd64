@@ -1,0 +1,38 @@
+FROM nvcr.io/nvidia/cuda:13.0.0-cudnn-devel-ubuntu24.04
+
+# Avoid interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install the build dependencies: just, cmake, Rust, Node.js 24, npm, and git
+# Also install curl and tar for downloading Rust and Node if needed, plus basic build tools
+RUN apt-get update && apt-get install -y \
+    curl \
+    git \
+    cmake \
+    build-essential \
+    pkg-config \
+    libssl-dev \
+    tar \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Rust (via rustup) - required for the build
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+# Install Node.js 24 (required by the build)
+RUN curl -fsSL https://deb.nodesource.com/setup_24.x | bash - \
+    && apt-get install -y nodejs \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install --global corepack@latest && \
+    corepack enable && \
+    corepack prepare pnpm@latest --activate
+
+RUN cargo install sccache --locked && \
+    cargo install just
+
+# TODO: Right now experimenting with just running the straight from releases instead of building from source.
+RUN curl -fsSL https://raw.githubusercontent.com/Mesh-LLM/mesh-llm/main/install.sh >> install.sh && \
+    chmod a+x ./install.sh
+
+CMD ["tail", "-f", "/dev/null"]

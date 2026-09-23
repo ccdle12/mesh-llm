@@ -1,0 +1,28 @@
+services:
+  mesh-llm:
+    build: .
+    image: mesh-llm:gpu
+    container_name: mesh-llm
+    ports:
+      - "3131:3131"  # Web Console
+      - "9337:9337"  # OpenAI-compatible API
+
+    # GPU support (requires NVIDIA Container Toolkit)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              device_ids: [""]
+              capabilities: [gpu]
+    environment:
+      # Ensure CUDA is visible; adjust if you want to restrict to specific GPUs
+      - CUDA_VISIBLE_DEVICES=0
+      - NVIDIA_VISIBLE_DEVICES=all
+      - HF_HOME=/root/.cache/huggingface
+      - PYTHONUNBUFFERED=1
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN}
+
+    restart: unless-stopped
+    # Override the command if you want a specific model or private mesh
+    # command: mesh-llm serve --auto
